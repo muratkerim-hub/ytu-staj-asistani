@@ -1,6 +1,12 @@
 # 🎓 YTÜ Staj Asistanı & CV Analiz Platformu
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://ytu-staj-asistani-jnwnekcvhbnja6omlr7fbg.streamlit.app/)
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![Google Gemini](https://img.shields.io/badge/AI-Google%20Gemini%202.5%20Flash-orange.svg)](https://aistudio.google.com/)
+
 > **Yıldız Teknik Üniversitesi öğrencileri ve mühendis adayları için geliştirilmiş kural tabanlı ATS denetleyicisi, ilan eşleştirme motoru, yapay zeka destekli mülakat simülatörü ve başvuru takip platformu.**
+
+🚀 **Canlı Uygulama:** [ytu-staj-asistani.streamlit.app](https://ytu-staj-asistani-jnwnekcvhbnja6omlr7fbg.streamlit.app/) *(Kurulum yapmadan doğrudan tarayıcınızdan veya telefonunuzdan deneyebilirsiniz!)*
 
 ---
 
