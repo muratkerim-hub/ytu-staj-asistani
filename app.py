@@ -163,7 +163,7 @@ def get_cv_content():
 
 # --- Ana Akış ---
 st.markdown('<div class="main-header">🎓 YTÜ Staj ve Kariyer Asistanı</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">CV\'nizi ATS uyumluluğu için denetleyin, staj ilanlarıyla eşleştirin ve Gemini ile güçlendirin.</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">CV\'ni yükle, ilanı yapıştır — şansını saniyeler içinde gör.</div>', unsafe_allow_html=True)
 
 cv_data = get_cv_content()
 
@@ -194,100 +194,104 @@ with st.spinner("🔍 ATS, Yetenek Eşleştirme ve Bağıntı Motorları Çalı�
 
 # --- 9 Sekmeli Kontrol Paneli ---
 tab_dash, tab_match, tab_ats, tab_star, tab_cl, tab_interview, tab_tracker, tab_strategy, tab_raw = st.tabs([
-    "📊 Genel Bakış & İşe Kabul",
-    "🎯 İlan Eşleştirme & Bağıntı",
-    "📋 ATS Uyumluluk Raporu",
-    "✨ STAR Madde Güçlendirici",
-    "✉️ Ön Yazı (Cover Letter)",
-    "🎤 Mülakat Hazırlığı",
-    "🗂️ Staj Başvuru Takipçisi",
-    "📅 Staj Stratejisi & YTÜ Takvimi",
-    "📄 Ayrıştırılan CV Metni"
+    "🏠 Özet",
+    "🎯 İlan Uyumu",
+    "📋 ATS Raporu",
+    "✨ CV Güçlendir",
+    "✉️ Ön Yazı",
+    "🎤 Mülakat",
+    "🗂️ Başvurularım",
+    "📅 Strateji",
+    "📄 CV Metni"
 ])
 
+
+def _score_color(value: float, good: float, mid: float) -> str:
+    """Skora göre renk (yeşil / sarı / kırmızı) döndürür."""
+    if value >= good:
+        return "#16A34A"
+    if value >= mid:
+        return "#D97706"
+    return "#DC2626"
+
+
+def _score_card(title: str, value_text: str, label: str, color: str) -> str:
+    return f"""
+    <div style="background:#FFFFFF; border:1px solid #E5E7EB; border-top:5px solid {color};
+                border-radius:14px; padding:22px 16px; text-align:center; height:100%;">
+        <div style="font-size:0.95rem; color:#6B7280; font-weight:600;">{title}</div>
+        <div style="font-size:3rem; font-weight:800; color:{color}; line-height:1.15; margin:6px 0;">{value_text}</div>
+        <div style="font-size:0.95rem; color:#374151; font-weight:600;">{label}</div>
+    </div>
+    """
+
 # =====================================================================
-# SEKME 1: GENEL BAKIŞ & İŞE KABUL İHTİMALİ
+# SEKME 1: ÖZET (SADE ANA SAYFA)
 # =====================================================================
 with tab_dash:
-    # 🎯 Öne Çıkan Başarı / İşe Kabul Kartı
-    st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); color: white; padding: 22px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <div>
-                <span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">ÇOK BOYUTLU ANALİZ</span>
-                <h2 style="margin: 8px 0 4px 0; color: white;">🎯 Tahmini İşe Kabul / Mülakat Çağrılma İhtimali</h2>
-                <p style="margin: 0; opacity: 0.92; font-size: 1rem;">{hire_prob['aciklama']}</p>
-            </div>
-            <div style="text-align: right; padding-top: 8px;">
-                <span style="font-size: 3.2rem; font-weight: 800; line-height: 1;">%{hire_prob['ihtimal_yuzdesi']}</span>
-                <span style="display: block; font-size: 1.1rem; font-weight: 600; margin-top: 4px;">{hire_prob['rozet']} {hire_prob['seviye']}</span>
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    ats_puan = ats_rapor["toplam_puan"]
+    ihtimal = hire_prob["ihtimal_yuzdesi"]
+    eslesme_puan = match_rapor.get("eslesme_puani", 0) if match_rapor.get("success") else None
 
-    # 4 Temel Metrik
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        ats_puan = ats_rapor["toplam_puan"]
-        st.metric("📋 ATS Filtre Skoru", f"{ats_puan} / 100")
-        if ats_puan >= 80:
-            st.success("ATS Geçiş: Yüksek")
-        elif ats_puan >= 60:
-            st.warning("ATS Geçiş: Orta")
+    # 3 Ana Skor Kartı
+    k1, k2, k3 = st.columns(3)
+    with k1:
+        st.markdown(_score_card(
+            "🎯 Mülakata Çağrılma İhtimali",
+            f"%{ihtimal}",
+            hire_prob["seviye"],
+            _score_color(ihtimal, 50, 30)
+        ), unsafe_allow_html=True)
+    with k2:
+        ats_label = "Filtreyi geçer" if ats_puan >= 80 else ("Sınırda" if ats_puan >= 60 else "Elenme riski")
+        st.markdown(_score_card(
+            "📋 ATS Skoru",
+            f"{ats_puan}",
+            f"/ 100 · {ats_label}",
+            _score_color(ats_puan, 80, 60)
+        ), unsafe_allow_html=True)
+    with k3:
+        if eslesme_puan is not None:
+            st.markdown(_score_card(
+                "🤝 İlana Uygunluk",
+                f"%{eslesme_puan}",
+                match_rapor.get("degerlendirme", ""),
+                _score_color(eslesme_puan, 70, 45)
+            ), unsafe_allow_html=True)
         else:
-            st.error("ATS Geçiş: Düşük")
+            st.markdown(_score_card("🤝 İlana Uygunluk", "—", "İlan metni girilmedi", "#9CA3AF"), unsafe_allow_html=True)
 
-    with col2:
-        if match_rapor.get("success"):
-            eslesme_puan = match_rapor["eslesme_puani"]
-            st.metric("🤝 Yetenek Eşleşmesi", f"%{eslesme_puan}")
-            st.caption(match_rapor["degerlendirme"])
+    st.write("")
+
+    # Eksik zorunlu yetenekler (kısa ve net)
+    if match_rapor.get("success"):
+        eksik_zorunlu = [
+            ev["etiket"] for ev in match_rapor["gereksinimler"]
+            if ev["seviye"] == "zorunlu" and ev["durum"] == "eksik"
+        ]
+        if eksik_zorunlu:
+            chips = " ".join(
+                f'<span style="background:#FEE2E2; color:#991B1B; padding:5px 12px; border-radius:20px; '
+                f'font-weight:600; font-size:0.9rem; margin:3px; display:inline-block;">{e}</span>'
+                for e in eksik_zorunlu[:8]
+            )
+            st.markdown(f"**❌ CV'nde eksik olan zorunlu yetenekler:**<br>{chips}", unsafe_allow_html=True)
         else:
-            st.metric("🤝 Yetenek Eşleşmesi", "—")
+            st.success("✅ İlandaki tüm zorunlu yetenekler CV'nde mevcut.")
 
-    with col3:
-        st.metric("🔗 CV-İlan Alan Bağıntısı", f"%{corr_analysis['baginti_skoru']}")
-        st.caption(f"{corr_analysis['alan_uyumu']}")
+    st.write("")
 
-    with col4:
-        if match_rapor.get("success"):
-            cov = match_rapor["zorunlu_kapsama"]
-            st.metric("📌 Zorunlu Yetenekler", f"{cov['karsilanan']} / {cov['toplam']}")
-            oran = round(100 * cov['karsilanan'] / cov['toplam']) if cov['toplam'] else 0
-            st.progress(oran / 100)
-        else:
-            st.metric("📌 Zorunlu Yetenekler", "—")
+    # Yapılacaklar (en fazla 3)
+    st.markdown("**🚀 Şansını artırmak için yapman gerekenler:**")
+    for i, t in enumerate(hire_prob["sans_artirici_taktikler"][:3], start=1):
+        st.markdown(f"{i}. {t}")
 
-    st.divider()
+    st.caption("Detaylı açıklamalar için üstteki **İlan Uyumu** ve **ATS Raporu** sekmelerine bakabilirsin.")
 
-    b_col1, b_col2 = st.columns(2)
-
-    with b_col1:
-        st.subheader("📊 İşe Kabul Puanı Nasıl Oluştu?")
-        st.caption("Farklı boyutların toplam başarı şansına katkısı ve rekabet kesintileri:")
-        bilesen = hire_prob["bilesenler"]
-        st.write(f"• **ATS Filtre Geçiş Gücü (Max 20):** `{bilesen['ats_etkisi']} puan`")
-        st.write(f"• **Zorunlu Yetenek Kapsaması (Max 35):** `{bilesen['zorunlu_kapsama_etkisi']} puan`")
-        st.write(f"• **Projelerde Somut Kanıt (Max 25):** `{bilesen['proje_kaniti_etkisi']} puan`")
-        st.write(f"• **Tercih Sebebi / Artı Değerler (Max 10):** `{bilesen['arti_deger_etkisi']} puan`")
-        st.write(f"• **Fact Guard Güvenilirlik (Max 10):** `{bilesen['guvenilirlik_etkisi']} puan`")
-        if bilesen.get("rekabet_kesintisi", 0) > 0:
-            st.caption(f"📉 **Piyasa Rekabet Katsayısı:** Başvuru havuzu yoğunluğu ve seçicilik sebebiyle `{bilesen['rekabet_kesintisi']} puan` dengelenmiştir.")
-
-    with b_col2:
-        st.subheader("🚀 Şansınızı Hızla Artıracak Aksiyonlar")
-        for t in hire_prob["sans_artirici_taktikler"]:
-            st.info(f"👉 {t}")
-
-        st.caption(f"**Alan Değerlendirmesi:** {corr_analysis['alan_yorumu']}")
-
-    # 📌 Bu İlanı Başvuru Takipçisine Kaydet
+    # Hızlı işlemler
     st.divider()
     default_comp, default_role = infer_company_and_role(job_text)
-    with st.expander("📌 Bu İlanı Staj Başvuru Takipçisine Kaydet", expanded=False):
-        st.caption("Bu ilana başvurmayı düşünüyorsanız, hesaplanan analiz skorlarıyla birlikte yerel SQLite veritabanınıza kaydedin.")
+    with st.expander("📌 Bu ilanı başvurularıma kaydet", expanded=False):
         with st.form("quick_save_app_form"):
             qs_c1, qs_c2 = st.columns(2)
             with qs_c1:
@@ -313,12 +317,12 @@ with tab_dash:
                     job_description=job_text[:2000],
                     notes=f_notes
                 )
-                st.success(f"🎉 '{f_comp} - {f_pos}' başvurusu başarıyla takipçiye eklendi! (Kayıt #{new_app_id}) ➔ 'Staj Başvuru Takipçisi' sekmesinden inceleyebilirsiniz.")
+                st.success(f"🎉 '{f_comp} - {f_pos}' kaydedildi! ➔ 'Başvurularım' sekmesinden takip edebilirsin.")
 
     # ATS Uyumlu CV İndirme Butonu
     docx_bytes_dash = export_cv_to_bytes(parsed_cv=parsed_cv, full_text=cv_text)
     st.download_button(
-        label="📄 Jake's Resume Formatında ATS Uyumlu Word (.docx) CV İndir",
+        label="📄 ATS uyumlu CV'yi indir (.docx)",
         data=docx_bytes_dash,
         file_name="ytu_staj_cv_ats_uyumlu.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -334,6 +338,22 @@ with tab_match:
     if not match_rapor.get("success"):
         st.warning(match_rapor.get("error", "İlan eşleştirmesi yapılamadı."))
     else:
+        # Ana sayfadan taşınan detay: Mülakat ihtimali hesaplama dökümü
+        with st.expander(f"📊 Mülakata çağrılma ihtimali (%{hire_prob['ihtimal_yuzdesi']}) nasıl hesaplandı?", expanded=False):
+            st.write(hire_prob["aciklama"])
+            bilesen = hire_prob["bilesenler"]
+            st.write(f"• **ATS filtre gücü (max 20):** `{bilesen['ats_etkisi']}`")
+            st.write(f"• **Zorunlu yetenek kapsaması (max 35):** `{bilesen['zorunlu_kapsama_etkisi']}`")
+            st.write(f"• **Projelerde somut kanıt (max 25):** `{bilesen['proje_kaniti_etkisi']}`")
+            st.write(f"• **Artı değerler (max 10):** `{bilesen['arti_deger_etkisi']}`")
+            st.write(f"• **Güvenilirlik / Fact Guard (max 10):** `{bilesen['guvenilirlik_etkisi']}`")
+            if bilesen.get("rekabet_kesintisi", 0) > 0:
+                st.caption(f"📉 Piyasa rekabeti nedeniyle `{bilesen['rekabet_kesintisi']}` puan düşüldü.")
+            if len(hire_prob["sans_artirici_taktikler"]) > 3:
+                st.markdown("**Diğer öneriler:**")
+                for t in hire_prob["sans_artirici_taktikler"][3:]:
+                    st.write(f"👉 {t}")
+
         # Alan ve Profil Bağıntısı Kutusu
         st.markdown(f"""
         <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
