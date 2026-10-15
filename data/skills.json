@@ -1,0 +1,72 @@
+{
+  "_aciklama": "Kanonik yetenek sözlüğü. Her yetenek yalnızca BİR kategoride bulunur. Eş anlamlılar/yazım varyantları data/synonyms.json içindedir. weight_multiplier: o kategorideki yeteneklerin puanlamadaki ağırlık çarpanı (varsayılan 1.0).",
+  "programlama_dilleri": {
+    "label": "Programlama Dilleri",
+    "skills": ["Python", "Java", "JavaScript", "TypeScript", "C", "C++", "C#", "Go", "Rust", "Kotlin", "Swift", "PHP", "Ruby", "R", "MATLAB", "Scala", "Dart", "Perl", "Bash", "PowerShell", "SQL", "Objective-C", "Lua", "Haskell", "Assembly", "VBA", "Fortran", "Solidity"]
+  },
+  "web_frontend": {
+    "label": "Web / Frontend",
+    "skills": ["HTML", "CSS", "React", "Angular", "Vue.js", "Next.js", "Nuxt.js", "Svelte", "jQuery", "Bootstrap", "Tailwind CSS", "Sass", "Redux", "Webpack", "Vite", "Three.js"]
+  },
+  "backend": {
+    "label": "Backend / API",
+    "skills": ["Node.js", "Express.js", "Django", "Flask", "FastAPI", "Spring Boot", "Spring Framework", ".NET", "ASP.NET", "Laravel", "Ruby on Rails", "NestJS", "GraphQL", "REST API", "gRPC", "Mikroservis Mimarisi", "WebSocket", "Hibernate", "Entity Framework"]
+  },
+  "mobil": {
+    "label": "Mobil",
+    "skills": ["Android", "iOS", "React Native", "Flutter", "Xamarin", "Jetpack Compose", "SwiftUI", "Ionic"]
+  },
+  "veritabani": {
+    "label": "Veritabanı",
+    "skills": ["PostgreSQL", "MySQL", "Microsoft SQL Server", "Oracle Database", "SQLite", "MongoDB", "Redis", "Elasticsearch", "Cassandra", "DynamoDB", "Firebase", "Neo4j", "MariaDB", "Snowflake", "BigQuery", "NoSQL", "PL/SQL", "T-SQL"]
+  },
+  "veri_bilimi": {
+    "label": "Veri Bilimi / Veri Mühendisliği",
+    "skills": ["Pandas", "NumPy", "SciPy", "Matplotlib", "Seaborn", "Plotly", "Jupyter", "Veri Analizi", "Veri Görselleştirme", "Veri Temizleme", "Power BI", "Tableau", "Looker", "Apache Spark", "PySpark", "Hadoop", "Apache Kafka", "Apache Airflow", "ETL", "Veri Madenciliği", "Veri Mühendisliği", "Veri Ambarı", "Büyük Veri", "dbt", "A/B Testi", "Polars", "Databricks", "Web Scraping", "Streamlit", "Gradio"]
+  },
+  "yapay_zeka": {
+    "label": "Yapay Zeka / Makine Öğrenmesi",
+    "skills": ["Yapay Zeka", "Makine Öğrenmesi", "Derin Öğrenme", "Doğal Dil İşleme", "Bilgisayarlı Görü", "Yapay Sinir Ağları", "CNN", "RNN", "LSTM", "scikit-learn", "TensorFlow", "Keras", "PyTorch", "Hugging Face", "LLM", "Üretken Yapay Zeka", "Prompt Engineering", "LangChain", "RAG", "Fine-tuning", "Vektör Veritabanı", "OpenAI API", "Gemini API", "OpenCV", "YOLO", "XGBoost", "LightGBM", "Pekiştirmeli Öğrenme", "Zaman Serisi Analizi", "Öneri Sistemleri", "MLOps", "MLflow", "NLTK", "spaCy"]
+  },
+  "bulut_devops": {
+    "label": "Bulut / DevOps",
+    "skills": ["AWS", "Microsoft Azure", "Google Cloud Platform", "Docker", "Kubernetes", "Terraform", "Ansible", "Jenkins", "GitHub Actions", "GitLab CI", "CI/CD", "Linux", "Nginx", "Serverless", "AWS Lambda", "Amazon S3", "Amazon EC2", "Heroku", "Vercel", "Prometheus", "Grafana", "Helm", "OpenShift", "DevOps"]
+  },
+  "araclar": {
+    "label": "Geliştirme Araçları",
+    "skills": ["Git", "GitHub", "GitLab", "Bitbucket", "Jira", "Confluence", "Trello", "Postman", "Swagger", "Figma", "Visual Studio Code"]
+  },
+  "yazilim_muhendisligi": {
+    "label": "Yazılım Mühendisliği / Test",
+    "skills": ["OOP", "Veri Yapıları", "Algoritmalar", "Tasarım Desenleri", "SOLID", "Clean Code", "Sistem Tasarımı", "Fonksiyonel Programlama", "Çoklu İş Parçacığı", "UML", "Agile", "Scrum", "Kanban", "Unit Test", "TDD", "Yazılım Testi", "Test Otomasyonu", "Pytest", "JUnit", "Selenium", "Cypress", "Jest"]
+  },
+  "guvenlik_ag": {
+    "label": "Siber Güvenlik / Ağ",
+    "skills": ["Siber Güvenlik", "Penetrasyon Testi", "Ağ Güvenliği", "OWASP", "Kriptografi", "TCP/IP", "Bilgisayar Ağları", "Wireshark", "Kali Linux", "OAuth", "JWT", "SIEM", "Firewall"]
+  },
+  "gomulu_donanim": {
+    "label": "Gömülü Sistemler / Donanım",
+    "skills": ["Gömülü Sistemler", "Arduino", "Raspberry Pi", "STM32", "Mikrodenetleyiciler", "IoT", "PLC", "FPGA", "VHDL", "Verilog", "RTOS", "ROS", "SCADA"]
+  },
+  "muhendislik_araclari": {
+    "label": "Mühendislik Yazılımları",
+    "skills": ["AutoCAD", "SolidWorks", "CATIA", "ANSYS", "Simulink", "LabVIEW", "Siemens NX", "Revit", "Fusion 360", "COMSOL", "Altium Designer", "Proteus"]
+  },
+  "ofis_is": {
+    "label": "Ofis / İş Araçları",
+    "skills": ["Microsoft Excel", "Microsoft Word", "Microsoft PowerPoint", "Microsoft Office", "Google Sheets", "SAP", "ERP", "Proje Yönetimi", "MS Project", "Yalın Üretim", "Six Sigma"]
+  },
+  "matematik_analitik": {
+    "label": "Matematik / Analitik",
+    "skills": ["Lineer Cebir", "Olasılık", "İstatistik", "Optimizasyon", "Yöneylem Araştırması", "Sayısal Analiz", "Diferansiyel Denklemler", "Kalkülüs", "Ayrık Matematik", "Stokastik Süreçler", "Regresyon Analizi", "Hipotez Testi", "Matematiksel Modelleme"]
+  },
+  "yabanci_dil": {
+    "label": "Yabancı Dil",
+    "skills": ["İngilizce", "Almanca", "Fransızca", "İspanyolca", "Arapça", "Rusça", "Japonca", "Çince", "İtalyanca"]
+  },
+  "kisisel_beceriler": {
+    "label": "Kişisel Beceriler",
+    "weight_multiplier": 0.5,
+    "skills": ["Takım Çalışması", "İletişim Becerileri", "Problem Çözme", "Analitik Düşünme", "Eleştirel Düşünme", "Liderlik", "Zaman Yönetimi", "Sunum Becerileri"]
+  }
+}

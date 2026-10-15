@@ -1,0 +1,41 @@
+# Gizli bilgiler ve API Anahtarları (ASLA GITHUB'A YÜKLENMEMELİ)
+.env
+.env.local
+*.env
+
+# Sanal Ortamlar ve Paketler (Boyutu devasa ve yerel yollar içerir)
+.venv/
+venv/
+ENV/
+env/
+.venv_broken_backup/
+
+# Python Önbellek Dosyaları
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDE ve Editör Ayarları
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Kişisel Test ve CV Dosyaları (Kişisel Veri Koruması)
+cv.pdf
+cv.docx
+*.pdf
+*.docx
+!assets/*.png
+!assets/*.jpg
+
+# Yerel Veritabanı (Başvuru Takipleri)
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+
+# İşletim Sistemi Geçici Dosyaları
+.DS_Store
+Thumbs.db
