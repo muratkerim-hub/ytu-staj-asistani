@@ -80,6 +80,8 @@
   - `.gitignore` dosyası güçlendirildi (`.env`, `.venv`, kişisel `*.pdf`, `*.docx`, `*.db`, `.idea`, `__pycache__` sızması engellendi).
   - Başka geliştiricilerin projeyi klonladığında API anahtarını tanımlayabilmesi için `.env.example` şablonu oluşturuldu.
   - Projenin mimarisini, modüllerini, kurulum adımlarını ve özelliklerini içeren profesyonel `README.md` hazırlandı.
+  - Streamlit Community Cloud canlı yayını için `st.secrets` ortam değişkeni dinamik köprüsü (`ai_helper.py`, `interview_bot.py`, `app.py`) eklendi.
+  - Canlı Web Uygulaması Yayınlandı: `https://ytu-staj-asistani-jnwnekcvhbnja6omlr7fbg.streamlit.app/` (`README.md` tepesine canlı rozet ve buton eklendi).
 
 ## Proje Durumu
 - **TÜM 11 AŞAMA VE KULLANICI İNOVASYONLARI EKSİKSİZ TAMAMLANDI!** 🎉
