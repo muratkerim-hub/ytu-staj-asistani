@@ -30,14 +30,35 @@ if hasattr(sys.stdout, "reconfigure"):
 # Ortam değişkenlerini yükle
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+            API_KEY = st.secrets["GEMINI_API_KEY"]
+            os.environ["GEMINI_API_KEY"] = API_KEY
+    except Exception:
+        pass
+
 MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 
 def _get_client() -> genai.Client:
     """Gemini API istemcisini başlatır ve doğrular."""
+    global API_KEY
+    if not API_KEY:
+        API_KEY = os.getenv("GEMINI_API_KEY")
+        if not API_KEY:
+            try:
+                import streamlit as st
+                if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+                    API_KEY = st.secrets["GEMINI_API_KEY"]
+                    os.environ["GEMINI_API_KEY"] = API_KEY
+            except Exception:
+                pass
+
     if not API_KEY:
         raise ValueError(
-            "GEMINI_API_KEY .env dosyasında bulunamadı! Lütfen geçerli bir API anahtarı ekleyin."
+            "GEMINI_API_KEY .env dosyasında veya Streamlit Secrets içinde bulunamadı! Lütfen geçerli bir API anahtarı ekleyin."
         )
     return genai.Client(api_key=API_KEY)
 

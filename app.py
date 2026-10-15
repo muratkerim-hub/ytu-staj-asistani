@@ -96,10 +96,18 @@ with st.sidebar:
     st.divider()
 
     # API Durum Rozeti
-    if API_KEY:
+    current_api_key = API_KEY or os.getenv("GEMINI_API_KEY")
+    if not current_api_key:
+        try:
+            if hasattr(st, "secrets") and "GEMINI_API_KEY" in st.secrets:
+                current_api_key = st.secrets["GEMINI_API_KEY"]
+        except Exception:
+            pass
+
+    if current_api_key:
         st.success(f"🟢 Gemini API Aktif (`{MODEL_NAME}`)")
     else:
-        st.error("🔴 Gemini API Anahtarı Eksik (.env)")
+        st.error("🔴 Gemini API Anahtarı Eksik (.env veya Secrets)")
 
     st.subheader("1. CV Yükleyin")
     uploaded_file = st.file_uploader(
