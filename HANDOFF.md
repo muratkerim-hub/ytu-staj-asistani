@@ -82,6 +82,10 @@
   - Projenin mimarisini, modüllerini, kurulum adımlarını ve özelliklerini içeren profesyonel `README.md` hazırlandı.
   - Streamlit Community Cloud canlı yayını için `st.secrets` ortam değişkeni dinamik köprüsü (`ai_helper.py`, `interview_bot.py`, `app.py`) eklendi.
   - Canlı Web Uygulaması Yayınlandı: `https://ytu-staj-asistani-jnwnekcvhbnja6omlr7fbg.streamlit.app/` (`README.md` tepesine canlı rozet ve buton eklendi).
+- **Sade Ana Sayfa (UI Sadeleştirme - app.py, 15 Ekim 2026):** Kullanıcı geri bildirimiyle ana sayfa bilgi yükünden arındırıldı:
+  - Ana sayfada (🏠 Özet) yalnızca 3 büyük renk kodlu kart: **Mülakata Çağrılma İhtimali**, **ATS Skoru**, **İlana Uygunluk**; altında eksik zorunlu yetenek etiketleri ve en fazla 3 maddelik "yapman gerekenler" listesi.
+  - "İşe kabul puanı nasıl oluştu" dökümü, alan bağıntısı ve ek öneriler **🎯 İlan Uyumu** sekmesine (kapalı expander) taşındı.
+  - Sekme adları kısaltıldı (Özet, İlan Uyumu, ATS Raporu, CV Güçlendir, Ön Yazı, Mülakat, Başvurularım, Strateji, CV Metni). `AppTest` ile hatasız render doğrulandı. ✅
 
 ## Proje Durumu
 - **TÜM 11 AŞAMA VE KULLANICI İNOVASYONLARI EKSİKSİZ TAMAMLANDI!** 🎉
