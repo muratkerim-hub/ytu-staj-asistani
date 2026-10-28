@@ -23,7 +23,7 @@ if hasattr(sys.stdout, "reconfigure"):
 # Modüllerimizi içe aktarıyoruz
 from parser import extract_text_from_pdf, extract_text_from_docx, parse_cv_sections
 from ats_checker import evaluate_cv, extract_bullets
-from job_matcher import match_cv_to_job
+from job_matcher import match_cv_to_job, SAMPLE_CV, SAMPLE_JOB
 from ai_helper import improve_bullet_point, generate_cover_letter, generate_interview_prep, MODEL_NAME, API_KEY
 from fact_guard import audit_text
 from interview_bot import start_interview, evaluate_and_respond, generate_interview_summary
@@ -105,19 +105,9 @@ with st.sidebar:
             pass
 
     if current_api_key:
-        st.markdown(
-            '<div title="Gemini API Aktif" style="display:inline-flex; align-items:center; justify-content:center; '
-            'background-color:#DEF7EC; border:1px solid #31C48D; border-radius:8px; padding:6px 12px; '
-            'margin-bottom:10px; cursor:default;">🟢</div>',
-            unsafe_allow_html=True
-        )
+        st.success(f"🟢 Gemini API Aktif (`{MODEL_NAME}`)")
     else:
-        st.markdown(
-            '<div title="Gemini API Anahtarı Eksik" style="display:inline-flex; align-items:center; justify-content:center; '
-            'background-color:#FDE8E8; border:1px solid #F98080; border-radius:8px; padding:6px 12px; '
-            'margin-bottom:10px; cursor:default;">🔴</div>',
-            unsafe_allow_html=True
-        )
+        st.error("🔴 Gemini API Anahtarı Eksik (.env veya Secrets)")
 
     st.subheader("1. CV Yükleyin")
     uploaded_file = st.file_uploader(
@@ -126,10 +116,12 @@ with st.sidebar:
         help="Metin seçilebilir standart PDF veya DOCX dosyası yükleyin."
     )
 
+    use_sample_cv = st.checkbox("Veya Hazır Örnek CV'yi Kullan", value=(uploaded_file is None))
+
     st.subheader("2. Hedef Staj İlanı")
     job_text_input = st.text_area(
         "İlan metnini buraya yapıştırın:",
-        value="",
+        value=SAMPLE_JOB if use_sample_cv else "",
         height=180,
         placeholder="Şirket adı, aranan nitelikler, iş tanımı..."
     )
@@ -157,158 +149,145 @@ def get_cv_content():
         finally:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
+    elif use_sample_cv:
+        return {
+            "success": True,
+            "text": SAMPLE_CV,
+            "page_count": 1,
+            "has_images": False,
+            "has_tables": False,
+            "error": None
+        }
     return None
 
 
 # --- Ana Akış ---
 st.markdown('<div class="main-header">🎓 YTÜ Staj ve Kariyer Asistanı</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">CV\'ni yükle, ilanı yapıştır — şansını saniyeler içinde gör.</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">CV\'nizi ATS uyumluluğu için denetleyin, staj ilanlarıyla eşleştirin ve Gemini ile güçlendirin.</div>', unsafe_allow_html=True)
 
 cv_data = get_cv_content()
-job_text = job_text_input.strip() if job_text_input else ""
 
-if cv_data and not cv_data.get("success"):
+if not cv_data:
+    st.info("👈 Başlamak için sol menüden bir CV yükleyin veya 'Örnek CV'yi Kullan' seçeneğini işaretleyin.")
+    st.stop()
+
+if not cv_data.get("success"):
     st.error(f"❌ CV Okunamadı: {cv_data.get('error')}")
+    st.stop()
 
-is_ready = bool(cv_data and cv_data.get("success") and job_text)
+cv_text = cv_data["text"]
+parsed_cv = parse_cv_sections(cv_text)
+job_text = job_text_input.strip() if job_text_input else SAMPLE_JOB
 
-if is_ready:
-    cv_text = cv_data["text"]
-    parsed_cv = parse_cv_sections(cv_text)
-
-    # Analizleri Çalıştır
-    with st.spinner("🔍 ATS, Yetenek Eşleştirme ve Bağıntı Motorları Çalıştırılıyor..."):
-        ats_rapor = evaluate_cv(
-            parsed_cv=parsed_cv,
-            full_text=cv_text,
-            page_count=cv_data.get("page_count", 1),
-            has_tables=cv_data.get("has_tables", False),
-            has_images=cv_data.get("has_images", False)
-        )
-        match_rapor = match_cv_to_job(parsed_cv, job_text)
-        hire_prob = calculate_hire_probability(ats_rapor, match_rapor)
-        corr_analysis = analyze_job_cv_correlation(parsed_cv, job_text, match_rapor)
-else:
-    cv_text = ""
-    parsed_cv = {}
-    ats_rapor = None
-    match_rapor = None
-    hire_prob = None
-    corr_analysis = None
+# Analizleri Çalıştır (Oturum durumunda önbelleğe al)
+with st.spinner("🔍 ATS, Yetenek Eşleştirme ve Bağıntı Motorları Çalıştırılıyor..."):
+    ats_rapor = evaluate_cv(
+        parsed_cv=parsed_cv,
+        full_text=cv_text,
+        page_count=cv_data.get("page_count", 1),
+        has_tables=cv_data.get("has_tables", False),
+        has_images=cv_data.get("has_images", False)
+    )
+    match_rapor = match_cv_to_job(parsed_cv, job_text)
+    hire_prob = calculate_hire_probability(ats_rapor, match_rapor)
+    corr_analysis = analyze_job_cv_correlation(parsed_cv, job_text, match_rapor)
 
 # --- 9 Sekmeli Kontrol Paneli ---
 tab_dash, tab_match, tab_ats, tab_star, tab_cl, tab_interview, tab_tracker, tab_strategy, tab_raw = st.tabs([
-    "🏠 Özet",
-    "🎯 İlan Uyumu",
-    "📋 ATS Raporu",
-    "✨ CV Güçlendir",
-    "✉️ Ön Yazı",
-    "🎤 Mülakat",
-    "🗂️ Başvurularım",
-    "📅 Strateji",
-    "📄 CV Metni"
+    "📊 Genel Bakış & İşe Kabul",
+    "🎯 İlan Eşleştirme & Bağıntı",
+    "📋 ATS Uyumluluk Raporu",
+    "✨ STAR Madde Güçlendirici",
+    "✉️ Ön Yazı (Cover Letter)",
+    "🎤 Mülakat Hazırlığı",
+    "🗂️ Staj Başvuru Takipçisi",
+    "📅 Staj Stratejisi & YTÜ Takvimi",
+    "📄 Ayrıştırılan CV Metni"
 ])
 
-
-def _score_color(value: float, good: float, mid: float) -> str:
-    """Skora göre renk (yeşil / sarı / kırmızı) döndürür."""
-    if value >= good:
-        return "#16A34A"
-    if value >= mid:
-        return "#D97706"
-    return "#DC2626"
-
-
-def _score_card(title: str, value_text: str, label: str, color: str) -> str:
-    return f"""
-    <div style="background:#FFFFFF; border:1px solid #E5E7EB; border-top:5px solid {color};
-                border-radius:14px; padding:22px 16px; text-align:center; height:100%;">
-        <div style="font-size:0.95rem; color:#6B7280; font-weight:600;">{title}</div>
-        <div style="font-size:3rem; font-weight:800; color:{color}; line-height:1.15; margin:6px 0;">{value_text}</div>
-        <div style="font-size:0.95rem; color:#374151; font-weight:600;">{label}</div>
-    </div>
-    """
-
 # =====================================================================
-# SEKME 1: ÖZET (SADE ANA SAYFA)
+# SEKME 1: GENEL BAKIŞ & İŞE KABUL İHTİMALİ
 # =====================================================================
 with tab_dash:
-    # 3 Ana Skor Kartı
-    k1, k2, k3 = st.columns(3)
-    if is_ready:
+    # 🎯 Öne Çıkan Başarı / İşe Kabul Kartı
+    st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); color: white; padding: 22px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div>
+                <span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;">ÇOK BOYUTLU ANALİZ</span>
+                <h2 style="margin: 8px 0 4px 0; color: white;">🎯 Tahmini İşe Kabul / Mülakat Çağrılma İhtimali</h2>
+                <p style="margin: 0; opacity: 0.92; font-size: 1rem;">{hire_prob['aciklama']}</p>
+            </div>
+            <div style="text-align: right; padding-top: 8px;">
+                <span style="font-size: 3.2rem; font-weight: 800; line-height: 1;">%{hire_prob['ihtimal_yuzdesi']}</span>
+                <span style="display: block; font-size: 1.1rem; font-weight: 600; margin-top: 4px;">{hire_prob['rozet']} {hire_prob['seviye']}</span>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 4 Temel Metrik
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
         ats_puan = ats_rapor["toplam_puan"]
-        ihtimal = hire_prob["ihtimal_yuzdesi"]
-        eslesme_puan = match_rapor.get("eslesme_puani", 0) if match_rapor.get("success") else None
-
-        with k1:
-            st.markdown(_score_card(
-                "🎯 Mülakata Çağrılma İhtimali",
-                f"%{ihtimal}",
-                hire_prob["seviye"],
-                _score_color(ihtimal, 50, 30)
-            ), unsafe_allow_html=True)
-        with k2:
-            ats_label = "Filtreyi geçer" if ats_puan >= 80 else ("Sınırda" if ats_puan >= 60 else "Elenme riski")
-            st.markdown(_score_card(
-                "📋 ATS Skoru",
-                f"{ats_puan}",
-                f"/ 100 · {ats_label}",
-                _score_color(ats_puan, 80, 60)
-            ), unsafe_allow_html=True)
-        with k3:
-            if eslesme_puan is not None:
-                st.markdown(_score_card(
-                    "🤝 İlana Uygunluk",
-                    f"%{eslesme_puan}",
-                    match_rapor.get("degerlendirme", ""),
-                    _score_color(eslesme_puan, 70, 45)
-                ), unsafe_allow_html=True)
-            else:
-                st.markdown(_score_card("🤝 İlana Uygunluk", "—", " ", "#9CA3AF"), unsafe_allow_html=True)
-    else:
-        with k1:
-            st.markdown(_score_card("🎯 Mülakata Çağrılma İhtimali", "—", " ", "#9CA3AF"), unsafe_allow_html=True)
-        with k2:
-            st.markdown(_score_card("📋 ATS Skoru", "—", " ", "#9CA3AF"), unsafe_allow_html=True)
-        with k3:
-            st.markdown(_score_card("🤝 İlana Uygunluk", "—", " ", "#9CA3AF"), unsafe_allow_html=True)
-
-    st.write("")
-
-    # Eksik zorunlu yetenekler (kısa ve net)
-    if is_ready and match_rapor.get("success"):
-        eksik_zorunlu = [
-            ev["etiket"] for ev in match_rapor["gereksinimler"]
-            if ev["seviye"] == "zorunlu" and ev["durum"] == "eksik"
-        ]
-        if eksik_zorunlu:
-            chips = " ".join(
-                f'<span style="background:#FEE2E2; color:#991B1B; padding:5px 12px; border-radius:20px; '
-                f'font-weight:600; font-size:0.9rem; margin:3px; display:inline-block;">{e}</span>'
-                for e in eksik_zorunlu[:8]
-            )
-            st.markdown(f"**❌ CV'nde eksik olan zorunlu yetenekler:**<br>{chips}", unsafe_allow_html=True)
+        st.metric("📋 ATS Filtre Skoru", f"{ats_puan} / 100")
+        if ats_puan >= 80:
+            st.success("ATS Geçiş: Yüksek")
+        elif ats_puan >= 60:
+            st.warning("ATS Geçiş: Orta")
         else:
-            st.success("✅ İlandaki tüm zorunlu yetenekler CV'nde mevcut.")
-    else:
-        st.markdown("**❌ CV'nde eksik olan zorunlu yetenekler:**<br>—", unsafe_allow_html=True)
+            st.error("ATS Geçiş: Düşük")
 
-    st.write("")
+    with col2:
+        if match_rapor.get("success"):
+            eslesme_puan = match_rapor["eslesme_puani"]
+            st.metric("🤝 Yetenek Eşleşmesi", f"%{eslesme_puan}")
+            st.caption(match_rapor["degerlendirme"])
+        else:
+            st.metric("🤝 Yetenek Eşleşmesi", "—")
 
-    # Yapılacaklar (en fazla 3)
-    st.markdown("**🚀 Şansını artırmak için yapman gerekenler:**")
-    if is_ready:
-        for i, t in enumerate(hire_prob["sans_artirici_taktikler"][:3], start=1):
-            st.markdown(f"{i}. {t}")
-    else:
-        st.markdown("—")
+    with col3:
+        st.metric("🔗 CV-İlan Alan Bağıntısı", f"%{corr_analysis['baginti_skoru']}")
+        st.caption(f"{corr_analysis['alan_uyumu']}")
 
-    st.caption("Detaylı açıklamalar için üstteki **İlan Uyumu** ve **ATS Raporu** sekmelerine bakabilirsin.")
+    with col4:
+        if match_rapor.get("success"):
+            cov = match_rapor["zorunlu_kapsama"]
+            st.metric("📌 Zorunlu Yetenekler", f"{cov['karsilanan']} / {cov['toplam']}")
+            oran = round(100 * cov['karsilanan'] / cov['toplam']) if cov['toplam'] else 0
+            st.progress(oran / 100)
+        else:
+            st.metric("📌 Zorunlu Yetenekler", "—")
 
-    # Hızlı işlemler
     st.divider()
-    default_comp, default_role = infer_company_and_role(job_text) if is_ready else ("", "")
-    with st.expander("📌 Bu ilanı başvurularıma kaydet", expanded=False):
+
+    b_col1, b_col2 = st.columns(2)
+
+    with b_col1:
+        st.subheader("📊 İşe Kabul Puanı Nasıl Oluştu?")
+        st.caption("Farklı boyutların toplam başarı şansına katkısı ve rekabet kesintileri:")
+        bilesen = hire_prob["bilesenler"]
+        st.write(f"• **ATS Filtre Geçiş Gücü (Max 20):** `{bilesen['ats_etkisi']} puan`")
+        st.write(f"• **Zorunlu Yetenek Kapsaması (Max 35):** `{bilesen['zorunlu_kapsama_etkisi']} puan`")
+        st.write(f"• **Projelerde Somut Kanıt (Max 25):** `{bilesen['proje_kaniti_etkisi']} puan`")
+        st.write(f"• **Tercih Sebebi / Artı Değerler (Max 10):** `{bilesen['arti_deger_etkisi']} puan`")
+        st.write(f"• **Fact Guard Güvenilirlik (Max 10):** `{bilesen['guvenilirlik_etkisi']} puan`")
+        if bilesen.get("rekabet_kesintisi", 0) > 0:
+            st.caption(f"📉 **Piyasa Rekabet Katsayısı:** Başvuru havuzu yoğunluğu ve seçicilik sebebiyle `{bilesen['rekabet_kesintisi']} puan` dengelenmiştir.")
+
+    with b_col2:
+        st.subheader("🚀 Şansınızı Hızla Artıracak Aksiyonlar")
+        for t in hire_prob["sans_artirici_taktikler"]:
+            st.info(f"👉 {t}")
+
+        st.caption(f"**Alan Değerlendirmesi:** {corr_analysis['alan_yorumu']}")
+
+    # 📌 Bu İlanı Başvuru Takipçisine Kaydet
+    st.divider()
+    default_comp, default_role = infer_company_and_role(job_text)
+    with st.expander("📌 Bu İlanı Staj Başvuru Takipçisine Kaydet", expanded=False):
+        st.caption("Bu ilana başvurmayı düşünüyorsanız, hesaplanan analiz skorlarıyla birlikte yerel SQLite veritabanınıza kaydedin.")
         with st.form("quick_save_app_form"):
             qs_c1, qs_c2 = st.columns(2)
             with qs_c1:
@@ -322,32 +301,28 @@ with tab_dash:
 
             save_btn = st.form_submit_button("💾 Başvuruyu Takipçiye Ekle", type="primary")
             if save_btn:
-                if not f_comp.strip() or not f_pos.strip():
-                    st.warning("Lütfen Şirket Adı ve Pozisyon alanlarını doldurun.")
-                else:
-                    new_app_id = add_application(
-                        company_name=f_comp,
-                        position_title=f_pos,
-                        location=f_loc,
-                        application_date=str(f_date),
-                        status=f_status,
-                        match_score=match_rapor.get("eslesme_puani", 0) if (is_ready and match_rapor.get("success")) else 0,
-                        ats_score=ats_rapor.get("toplam_puan", 0) if is_ready else 0,
-                        hire_probability=hire_prob.get("ihtimal_yuzdesi", 0) if is_ready else 0,
-                        job_description=job_text[:2000] if is_ready else "",
-                        notes=f_notes
-                    )
-                    st.success(f"🎉 '{f_comp} - {f_pos}' kaydedildi! ➔ 'Başvurularım' sekmesinden takip edebilirsin.")
+                new_app_id = add_application(
+                    company_name=f_comp,
+                    position_title=f_pos,
+                    location=f_loc,
+                    application_date=str(f_date),
+                    status=f_status,
+                    match_score=match_rapor.get("eslesme_puani", 0) if match_rapor.get("success") else 0,
+                    ats_score=ats_rapor.get("toplam_puan", 0),
+                    hire_probability=hire_prob.get("ihtimal_yuzdesi", 0),
+                    job_description=job_text[:2000],
+                    notes=f_notes
+                )
+                st.success(f"🎉 '{f_comp} - {f_pos}' başvurusu başarıyla takipçiye eklendi! (Kayıt #{new_app_id}) ➔ 'Staj Başvuru Takipçisi' sekmesinden inceleyebilirsiniz.")
 
     # ATS Uyumlu CV İndirme Butonu
-    docx_bytes_dash = export_cv_to_bytes(parsed_cv=parsed_cv, full_text=cv_text) if is_ready else b""
+    docx_bytes_dash = export_cv_to_bytes(parsed_cv=parsed_cv, full_text=cv_text)
     st.download_button(
-        label="📄 ATS uyumlu CV'yi indir (.docx)",
+        label="📄 Jake's Resume Formatında ATS Uyumlu Word (.docx) CV İndir",
         data=docx_bytes_dash,
         file_name="ytu_staj_cv_ats_uyumlu.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         use_container_width=True,
-        disabled=not is_ready,
         key="btn_download_docx_dash"
     )
 
@@ -356,59 +331,9 @@ with tab_dash:
 # SEKME 2: İLAN EŞLEŞTİRME & YETENEK ANALİZİ
 # =====================================================================
 with tab_match:
-    if not is_ready:
-        with st.expander("📊 Mülakata çağrılma ihtimali (—) nasıl hesaplandı?", expanded=False):
-            st.write("• **ATS filtre gücü (max 20):** `—`")
-            st.write("• **Zorunlu yetenek kapsaması (max 35):** `—`")
-            st.write("• **Projelerde somut kanıt (max 25):** `—`")
-            st.write("• **Artı değerler (max 10):** `—`")
-            st.write("• **Güvenilirlik / Fact Guard (max 10):** `—`")
-
-        st.markdown("""
-        <div style="background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                <div>
-                    <span style="font-weight: 700; color: #374151; font-size: 1.1rem;">🔗 CV ve İlan Alan Bağıntısı: —</span>
-                    <p style="margin: 6px 0 0 0; color: #6B7280; font-size: 0.95rem;">—</p>
-                </div>
-                <div style="text-align: right;">
-                    <span style="font-size: 0.85rem; color: #6B7280;"><strong>CV:</strong> — ➔ <strong>İlan:</strong> —</span>
-                </div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.subheader("📊 Kategori Bazında Uyum Oranı")
-        st.write("—")
-
-        st.divider()
-        st.subheader("📋 İlandaki Tüm Gereksinimler ve CV'deki Karşılıkları")
-        st.radio(
-            "Filtrele:",
-            ["Tümü", "Sadece Eksikler", "Kanıtlı Olanlar", "Zayıf Kanıt / Sadece Listelenmiş"],
-            horizontal=True,
-            key="filter_radio_empty"
-        )
-        st.write("—")
-    elif not match_rapor.get("success"):
+    if not match_rapor.get("success"):
         st.warning(match_rapor.get("error", "İlan eşleştirmesi yapılamadı."))
     else:
-        # Ana sayfadan taşınan detay: Mülakat ihtimali hesaplama dökümü
-        with st.expander(f"📊 Mülakata çağrılma ihtimali (%{hire_prob['ihtimal_yuzdesi']}) nasıl hesaplandı?", expanded=False):
-            st.write(hire_prob["aciklama"])
-            bilesen = hire_prob["bilesenler"]
-            st.write(f"• **ATS filtre gücü (max 20):** `{bilesen['ats_etkisi']}`")
-            st.write(f"• **Zorunlu yetenek kapsaması (max 35):** `{bilesen['zorunlu_kapsama_etkisi']}`")
-            st.write(f"• **Projelerde somut kanıt (max 25):** `{bilesen['proje_kaniti_etkisi']}`")
-            st.write(f"• **Artı değerler (max 10):** `{bilesen['arti_deger_etkisi']}`")
-            st.write(f"• **Güvenilirlik / Fact Guard (max 10):** `{bilesen['guvenilirlik_etkisi']}`")
-            if bilesen.get("rekabet_kesintisi", 0) > 0:
-                st.caption(f"📉 Piyasa rekabeti nedeniyle `{bilesen['rekabet_kesintisi']}` puan düşüldü.")
-            if len(hire_prob["sans_artirici_taktikler"]) > 3:
-                st.markdown("**Diğer öneriler:**")
-                for t in hire_prob["sans_artirici_taktikler"][3:]:
-                    st.write(f"👉 {t}")
-
         # Alan ve Profil Bağıntısı Kutusu
         st.markdown(f"""
         <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
@@ -488,51 +413,46 @@ with tab_match:
 # SEKME 3: ATS UYUMLULUK RAPORU
 # =====================================================================
 with tab_ats:
-    ats_header_score = f"{ats_rapor['toplam_puan']} / 100" if is_ready else "— / 100"
-    st.subheader(f"🎯 Kural Tabanlı 9 Kriterli ATS Denetimi ({ats_header_score})")
+    st.subheader(f"🎯 Kural Tabanlı 9 Kriterli ATS Denetimi ({ats_rapor['toplam_puan']} / 100)")
     st.caption("Canva gibi şablonların aksine, gerçek şirket ATS yazılımlarının okuma kuralları test edilir.")
 
-    if is_ready:
-        for c in ats_rapor["detayli_kontroller"]:
-            durum = c["durum"]
-            if durum == "GEÇTİ":
-                badge_class = "badge-pass"
-                icon = "✅"
-            elif durum == "UYARI":
-                badge_class = "badge-warn"
-                icon = "⚠️"
-            else:
-                badge_class = "badge-fail"
-                icon = "❌"
+    for c in ats_rapor["detayli_kontroller"]:
+        durum = c["durum"]
+        if durum == "GEÇTİ":
+            badge_class = "badge-pass"
+            icon = "✅"
+        elif durum == "UYARI":
+            badge_class = "badge-warn"
+            icon = "⚠️"
+        else:
+            badge_class = "badge-fail"
+            icon = "❌"
 
-            with st.container():
-                st.markdown(f"""
-                <div class="report-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 700; font-size: 1.05rem;">{icon} {c['kriter']}</span>
-                        <div>
-                            <span class="{badge_class}">{durum}</span>
-                            <span style="font-weight: 600; margin-left: 8px;">{c['puan']}</span>
-                        </div>
+        with st.container():
+            st.markdown(f"""
+            <div class="report-card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 700; font-size: 1.05rem;">{icon} {c['kriter']}</span>
+                    <div>
+                        <span class="{badge_class}">{durum}</span>
+                        <span style="font-weight: 600; margin-left: 8px;">{c['puan']}</span>
                     </div>
-                    <p style="margin: 8px 0 4px 0; color: #374151;"><strong>🔎 Tespit:</strong> {c['aciklama']}</p>
-                    {f'<p style="margin: 0; color: #1E40AF;"><strong>💡 Çözüm Önerisi:</strong> {c["cozum"]}</p>' if durum != "GEÇTİ" else ''}
                 </div>
-                """, unsafe_allow_html=True)
-    else:
-        st.write("—")
+                <p style="margin: 8px 0 4px 0; color: #374151;"><strong>🔎 Tespit:</strong> {c['aciklama']}</p>
+                {f'<p style="margin: 0; color: #1E40AF;"><strong>💡 Çözüm Önerisi:</strong> {c["cozum"]}</p>' if durum != "GEÇTİ" else ''}
+            </div>
+            """, unsafe_allow_html=True)
 
     st.divider()
     st.subheader("📥 ATS Uyumlu Jake's Resume Şablonunu İndir")
     st.caption("ATS sistemlerinin tablosuz ve tek sütunlu okuma kurallarına tam uyumlu, düzenlenebilir Word belgesi.")
-    docx_bytes_ats = export_cv_to_bytes(parsed_cv=parsed_cv, full_text=cv_text) if is_ready else b""
+    docx_bytes_ats = export_cv_to_bytes(parsed_cv=parsed_cv, full_text=cv_text)
     st.download_button(
         label="📄 ATS Uyumlu Word (.docx) CV İndir",
         data=docx_bytes_ats,
         file_name="ytu_staj_cv_ats_uyumlu.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         type="primary",
-        disabled=not is_ready,
         key="btn_download_docx_ats"
     )
 
@@ -569,7 +489,7 @@ with tab_star:
             with st.spinner("Gemini ile alternatifler hazırlanıyor ve Fact Guard denetimi yapılıyor..."):
                 res_improve = improve_bullet_point(
                     bullet=custom_bullet,
-                    target_skills=[g["eslesen_yetenek"] for g in (match_rapor or {}).get("gereksinimler", []) if g.get("eslesen_yetenek")][:5],
+                    target_skills=[g["eslesen_yetenek"] for g in match_rapor.get("gereksinimler", []) if g.get("eslesen_yetenek")][:5],
                     job_context=job_text[:300]
                 )
 
@@ -604,14 +524,13 @@ with tab_star:
 
     st.subheader("📥 Güçlendirilmiş CV'yi Word (.docx) Olarak İndir")
     st.caption("Jake's Resume / Harvard formatında tek sütunlu, 0.5 inç kenar boşluklu, tüm ATS botlarının %100 okuyacağı profesyonel Word belgesi.")
-    docx_bytes_star = export_cv_to_bytes(parsed_cv=parsed_cv, full_text=cv_text) if is_ready else b""
+    docx_bytes_star = export_cv_to_bytes(parsed_cv=parsed_cv, full_text=cv_text)
     st.download_button(
         label="📄 Güçlendirilmiş Word (.docx) CV'yi İndir",
         data=docx_bytes_star,
         file_name="ytu_staj_cv_ats_uyumlu.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         type="primary",
-        disabled=not is_ready,
         key="btn_download_docx_star"
     )
 
@@ -623,7 +542,7 @@ with tab_cl:
     st.subheader("✉️ İlana ve CV'nize Özel Ön Yazı (Cover Letter)")
     st.caption("Şablonik olmayan, YTÜ öğrencisi kimliğinizi ve somut projelerinizi ön plana çıkaran profesyonel mektup.")
 
-    if st.button("📝 Ön Yazı Oluştur", type="primary", disabled=not is_ready):
+    if st.button("📝 Ön Yazı Oluştur", type="primary"):
         with st.spinner("Gemini ilana özel ön yazıyı kaleme alıyor..."):
             cl_res = generate_cover_letter(parsed_cv, job_text, match_rapor)
 
@@ -680,7 +599,7 @@ with tab_interview:
                 help="Her rol farklı bir bakış açısıyla sorular sorar ve sizi değerlendirir."
             )
         with sim_col2:
-            start_sim_btn = st.button("🚀 Yeni Mülakat Başlat", type="primary", use_container_width=True, disabled=not is_ready)
+            start_sim_btn = st.button("🚀 Yeni Mülakat Başlat", type="primary", use_container_width=True)
 
         if start_sim_btn:
             with st.spinner(f"{selected_role} hazırlanıyor..."):
@@ -776,7 +695,7 @@ with tab_interview:
             st.info("👆 Başlamak için mülakatçı profilinizi seçin ve **'Yeni Mülakat Başlat'** butonuna tıklayın.")
 
     with sub_list:
-        if st.button("🎯 Tüm Olası Soruları Listele", type="primary", disabled=not is_ready):
+        if st.button("🎯 Tüm Olası Soruları Listele", type="primary"):
             with st.spinner("Mülakat senaryoları hazırlanıyor..."):
                 q_res = generate_interview_prep(parsed_cv, job_text, match_rapor)
                 if not q_res["success"]:
@@ -968,9 +887,9 @@ with tab_strategy:
     custom_strategy = generate_personalized_strategy(
         grade_level=selected_grade,
         internship_type=selected_type,
-        ats_score=ats_rapor.get("toplam_puan", 80) if is_ready else 80,
-        match_score=match_rapor.get("eslesme_puani", 75) if (is_ready and match_rapor.get("success")) else 75,
-        hire_probability=hire_prob.get("ihtimal_yuzdesi", 70) if is_ready else 70
+        ats_score=ats_rapor.get("toplam_puan", 80),
+        match_score=match_rapor.get("eslesme_puani", 75) if match_rapor.get("success") else 75,
+        hire_probability=hire_prob.get("ihtimal_yuzdesi", 70)
     )
 
     # Kişiselleştirilmiş Değerlendirme Kartı
@@ -991,13 +910,10 @@ with tab_strategy:
 
     with s_col2:
         st.markdown("#### 💡 Analiz Skorlarınıza Göre Aksiyonlar")
-        if is_ready:
-            for w in custom_strategy["uyarilar"]:
-                st.warning(w)
-            for t in custom_strategy["taktikler"]:
-                st.success(t)
-        else:
-            st.write("—")
+        for w in custom_strategy["uyarilar"]:
+            st.warning(w)
+        for t in custom_strategy["taktikler"]:
+            st.success(t)
 
     st.divider()
 
@@ -1105,10 +1021,7 @@ with tab_raw:
     st.subheader("📄 Parser Tarafından Tanınan CV Bölümleri")
     st.caption("Parser modülünün CV'nizi nasıl okuduğunu ve hangi bölümlere ayırdığını şeffafça inceleyebilirsiniz.")
 
-    if is_ready:
-        for sec_name, sec_content in parsed_cv.items():
-            if sec_content.strip():
-                with st.expander(f"📌 {sec_name.upper()}", expanded=(sec_name in ["projeler", "deneyim"])):
-                    st.text(sec_content)
-    else:
-        st.write("—")
+    for sec_name, sec_content in parsed_cv.items():
+        if sec_content.strip():
+            with st.expander(f"📌 {sec_name.upper()}", expanded=(sec_name in ["projeler", "deneyim"])):
+                st.text(sec_content)
